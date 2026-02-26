@@ -19,8 +19,11 @@ app.use(cors({
     "http://localhost:5173",
     "https://sdn43bkl.vercel.app"
   ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"],
   credentials: true
 }));
+
 app.use(express.json())
 app.use("/uploads", express.static("uploads"));
 app.use("/api/guru", guruRoutes)
