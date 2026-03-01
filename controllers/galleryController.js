@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Gallery from "../models/Gallery.js";
 
 // CREATE
@@ -19,7 +20,7 @@ export const createGallery = async (req, res) => {
       });
     }
 
-    const gallery = new Gallery({
+    const gallery = await Gallery.create({
       title,
       description,
       image: {
@@ -27,8 +28,6 @@ export const createGallery = async (req, res) => {
         contentType: req.file.mimetype,
       },
     });
-
-    await gallery.save();
 
     res.status(201).json({
       success: true,
@@ -42,7 +41,7 @@ export const createGallery = async (req, res) => {
   }
 };
 
-// GET ALL (tanpa kirim buffer)
+// GET ALL (tanpa buffer)
 export const getGallery = async (req, res) => {
   try {
     const data = await Gallery.find()
@@ -64,7 +63,16 @@ export const getGallery = async (req, res) => {
 // GET IMAGE BY ID
 export const getGalleryImage = async (req, res) => {
   try {
-    const gallery = await Gallery.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID tidak valid",
+      });
+    }
+
+    const gallery = await Gallery.findById(id).select("image");
 
     if (!gallery || !gallery.image?.data) {
       return res.status(404).json({
@@ -74,7 +82,9 @@ export const getGalleryImage = async (req, res) => {
     }
 
     res.set("Content-Type", gallery.image.contentType);
-    res.send(gallery.image.data);
+    res.set("Cache-Control", "public, max-age=31536000");
+
+    res.status(200).send(gallery.image.data);
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -86,24 +96,17 @@ export const getGalleryImage = async (req, res) => {
 // UPDATE
 export const updateGallery = async (req, res) => {
   try {
+    const { id } = req.params;
     const { title, description } = req.body;
 
-    const updateData = {};
-    if (title) updateData.title = title;
-    if (description) updateData.description = description;
-
-    if (req.file) {
-      updateData.image = {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-      };
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID tidak valid",
+      });
     }
 
-    const gallery = await Gallery.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    const gallery = await Gallery.findById(id);
 
     if (!gallery) {
       return res.status(404).json({
@@ -112,9 +115,21 @@ export const updateGallery = async (req, res) => {
       });
     }
 
+    if (title) gallery.title = title;
+    if (description) gallery.description = description;
+
+    if (req.file) {
+      gallery.image = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+      };
+    }
+
+    await gallery.save();
+
     res.status(200).json({
       success: true,
-      data: gallery,
+      data: gallery._id,
     });
   } catch (err) {
     res.status(500).json({
@@ -127,7 +142,16 @@ export const updateGallery = async (req, res) => {
 // DELETE
 export const deleteGallery = async (req, res) => {
   try {
-    const gallery = await Gallery.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID tidak valid",
+      });
+    }
+
+    const gallery = await Gallery.findByIdAndDelete(id);
 
     if (!gallery) {
       return res.status(404).json({

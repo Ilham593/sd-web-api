@@ -5,14 +5,22 @@ const facilitySchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
     desc: {
       type: String,
       required: true,
+      trim: true,
     },
     image: {
-      data: Buffer,
-      contentType: String,
+      data: {
+        type: Buffer,
+        required: true,
+      },
+      contentType: {
+        type: String,
+        required: true,
+      },
     },
   },
   { timestamps: true }
