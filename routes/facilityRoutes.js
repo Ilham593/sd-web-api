@@ -4,25 +4,19 @@ import {
   createFacility,
   getFacilities,
   deleteFacility,
+  getFacilityImage,
 } from "../controllers/facilityController.js";
 
 const router = express.Router();
 
-// MULTER CONFIG
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/facilities");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + ".jpg");
-  },
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // max 2MB
 });
 
-const upload = multer({ storage });
-
-// ROUTES
 router.post("/", upload.single("image"), createFacility);
 router.get("/", getFacilities);
+router.get("/:id/image", getFacilityImage);
 router.delete("/:id", deleteFacility);
 
 export default router;

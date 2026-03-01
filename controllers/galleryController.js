@@ -1,71 +1,102 @@
 import Gallery from "../models/Gallery.js";
-import cloudinary from "../config/cloudinary.js";
 
-// Get all gallery images
-export const getGallery = async (req, res) => {
-  try {
-    const data = await Gallery.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Create new gallery image
+// CREATE
 export const createGallery = async (req, res) => {
   try {
     const { title, description } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "Gambar wajib diupload" });
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "Title wajib diisi",
+      });
     }
 
-    // Upload ke Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: "sdn43" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Gambar wajib diupload",
+      });
+    }
 
-    const gallery = await Gallery.create({
+    const gallery = new Gallery({
       title,
       description,
-      src: result.secure_url,
+      image: {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+      },
     });
 
-    res.status(201).json({ success: true, data: gallery });
+    await gallery.save();
 
+    res.status(201).json({
+      success: true,
+      data: gallery._id,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
-// Update gallery
+// GET ALL (tanpa kirim buffer)
+export const getGallery = async (req, res) => {
+  try {
+    const data = await Gallery.find()
+      .select("-image.data")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// GET IMAGE BY ID
+export const getGalleryImage = async (req, res) => {
+  try {
+    const gallery = await Gallery.findById(req.params.id);
+
+    if (!gallery || !gallery.image?.data) {
+      return res.status(404).json({
+        success: false,
+        message: "Gambar tidak ditemukan",
+      });
+    }
+
+    res.set("Content-Type", gallery.image.contentType);
+    res.send(gallery.image.data);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// UPDATE
 export const updateGallery = async (req, res) => {
   try {
     const { title, description } = req.body;
 
-    const updateData = { title, description };
+    const updateData = {};
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
 
     if (req.file) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "sdn43" },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        stream.end(req.file.buffer);
-      });
-
-      updateData.src = result.secure_url;
+      updateData.image = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+      };
     }
 
     const gallery = await Gallery.findByIdAndUpdate(
@@ -75,29 +106,44 @@ export const updateGallery = async (req, res) => {
     );
 
     if (!gallery) {
-      return res.status(404).json({ success: false, message: "Gallery item not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Gallery tidak ditemukan",
+      });
     }
 
-    res.status(200).json({ success: true, data: gallery });
-
+    res.status(200).json({
+      success: true,
+      data: gallery,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
-// Delete gallery
+// DELETE
 export const deleteGallery = async (req, res) => {
   try {
     const gallery = await Gallery.findByIdAndDelete(req.params.id);
 
     if (!gallery) {
-      return res.status(404).json({ success: false, message: "Gallery item not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Gallery tidak ditemukan",
+      });
     }
 
-    res.status(200).json({ success: true, data: gallery });
-
+    res.status(200).json({
+      success: true,
+      message: "Gallery berhasil dihapus",
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };

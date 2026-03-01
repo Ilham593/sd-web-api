@@ -8,11 +8,11 @@ const facilitySchema = new mongoose.Schema(
     },
     desc: {
       type: String,
-      default: "",
+      required: true,
     },
     image: {
-      type: String,
-      required: true,
+      data: Buffer,
+      contentType: String,
     },
   },
   { timestamps: true }
