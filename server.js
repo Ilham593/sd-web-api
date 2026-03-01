@@ -1,8 +1,7 @@
-import express from "express";
+cek dong import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import serverless from "serverless-http";
 import connectDB from "./config/db.js";
 import guruRoutes from "./routes/guruRoutes.js";
 import statsRoutes from "./routes/statsRoutes.js";
@@ -34,6 +33,8 @@ app.use("/api/ppdb", ppdbRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/facilities", facilityRoutes);
 
-// ❌ HAPUS app.listen
-// ✅ EXPORT handler
-export default serverless(app);
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
