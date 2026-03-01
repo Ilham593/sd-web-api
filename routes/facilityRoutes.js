@@ -2,28 +2,43 @@ import express from "express";
 import multer from "multer";
 import {
   createFacility,
+  updateFacility,
   getFacilities,
-  deleteFacility,
   getFacilityImage,
+  deleteFacility,
 } from "../controllers/facilityController.js";
 
 const router = express.Router();
 
+const storage = multer.memoryStorage();
+
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 }, // max 2MB
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
 });
 
-// CREATE
-router.post("/", upload.single("image"), createFacility);
+// Middleware handle error multer
+const uploadMiddleware = (req, res, next) => {
+  upload.single("image")(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({
+        success: false,
+        message: "Ukuran file maksimal 2MB",
+      });
+    } else if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
+      });
+    }
+    next();
+  });
+};
 
-// GET LIST
+router.post("/", uploadMiddleware, createFacility);
+router.put("/:id", uploadMiddleware, updateFacility);
 router.get("/", getFacilities);
-
-// GET IMAGE
 router.get("/:id/image", getFacilityImage);
-
-// DELETE
 router.delete("/:id", deleteFacility);
 
 export default router;

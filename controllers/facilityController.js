@@ -1,18 +1,8 @@
-import mongoose from "mongoose";
 import Facility from "../models/Facility.js";
 
 // CREATE
 export const createFacility = async (req, res) => {
   try {
-    const { title, desc } = req.body;
-
-    if (!title || !desc) {
-      return res.status(400).json({
-        success: false,
-        message: "Title dan deskripsi wajib diisi",
-      });
-    }
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -20,20 +10,23 @@ export const createFacility = async (req, res) => {
       });
     }
 
-    const facility = await Facility.create({
-      title,
-      desc,
+    const facility = new Facility({
+      title: req.body.title,
+      desc: req.body.desc || "",
       image: {
         data: req.file.buffer,
         contentType: req.file.mimetype,
       },
     });
 
+    await facility.save();
+
     res.status(201).json({
       success: true,
-      data: facility._id,
+      message: "Facility berhasil dibuat",
     });
   } catch (error) {
+    console.error("CREATE ERROR:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -41,18 +34,56 @@ export const createFacility = async (req, res) => {
   }
 };
 
-// GET ALL (tanpa buffer)
+// UPDATE
+export const updateFacility = async (req, res) => {
+  try {
+    const facility = await Facility.findById(req.params.id);
+
+    if (!facility) {
+      return res.status(404).json({
+        success: false,
+        message: "Data tidak ditemukan",
+      });
+    }
+
+    facility.title = req.body.title || facility.title;
+    facility.desc = req.body.desc ?? facility.desc;
+
+    if (req.file) {
+      facility.image = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+      };
+    }
+
+    await facility.save();
+
+    res.json({
+      success: true,
+      message: "Facility berhasil diupdate",
+    });
+  } catch (error) {
+    console.error("UPDATE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// GET ALL (tanpa kirim buffer)
 export const getFacilities = async (req, res) => {
   try {
     const facilities = await Facility.find()
       .select("-image.data")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    res.json({
       success: true,
       data: facilities,
     });
   } catch (error) {
+    console.error("GET ERROR:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -60,19 +91,10 @@ export const getFacilities = async (req, res) => {
   }
 };
 
-// GET IMAGE BY ID
+// GET IMAGE
 export const getFacilityImage = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "ID tidak valid",
-      });
-    }
-
-    const facility = await Facility.findById(id).select("image");
+    const facility = await Facility.findById(req.params.id);
 
     if (!facility || !facility.image?.data) {
       return res.status(404).json({
@@ -82,10 +104,9 @@ export const getFacilityImage = async (req, res) => {
     }
 
     res.set("Content-Type", facility.image.contentType);
-    res.set("Cache-Control", "public, max-age=31536000");
-
-    res.status(200).send(facility.image.data);
+    res.send(facility.image.data);
   } catch (error) {
+    console.error("IMAGE ERROR:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -96,16 +117,7 @@ export const getFacilityImage = async (req, res) => {
 // DELETE
 export const deleteFacility = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "ID tidak valid",
-      });
-    }
-
-    const facility = await Facility.findByIdAndDelete(id);
+    const facility = await Facility.findById(req.params.id);
 
     if (!facility) {
       return res.status(404).json({
@@ -114,11 +126,14 @@ export const deleteFacility = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    await facility.deleteOne();
+
+    res.json({
       success: true,
       message: "Facility berhasil dihapus",
     });
   } catch (error) {
+    console.error("DELETE ERROR:", error);
     res.status(500).json({
       success: false,
       message: error.message,

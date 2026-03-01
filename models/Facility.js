@@ -4,12 +4,12 @@ const facilitySchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: true,
+      required: [true, "Judul wajib diisi"],
       trim: true,
     },
     desc: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
     image: {
