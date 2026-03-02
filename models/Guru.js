@@ -1,18 +1,18 @@
-import mongoose from "mongoose"
+const mongoose = require('mongoose');
 
 const guruSchema = new mongoose.Schema({
-  nama: {
-    type: String,
-    required: true
+  nama: { type: String, required: true },
+  jabatan: { type: String, required: true }, // Contoh: Guru Kelas, Kepala Sekolah, Penjaga
+  status: { 
+    type: String, 
+    enum: ['PNS', 'PPPK', 'Honor'], 
+    default: 'Honor' 
   },
-  mapel: {
-    type: String,
-    required: true
-  },
-  noHp: String,
-  alamat: String
-}, {
-  timestamps: true
-})
+  kategori: { 
+    type: String, 
+    enum: ['Pendidik', 'Kependidikan'], 
+    default: 'Pendidik' 
+  }
+}, { timestamps: true });
 
-export default mongoose.model("Guru", guruSchema)
+module.exports = mongoose.model('Guru', guruSchema);
