@@ -18,13 +18,14 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Izinkan request tanpa origin (seperti Postman atau mobile apps)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      // Izinkan jika:
+      // 1. Tidak ada origin (seperti Postman)
+      // 2. Berasal dari localhost
+      // 3. Berasal dari domain vercel manapun yang kamu punya
+      if (!origin || origin.includes("localhost") || origin.includes("vercel.app")) {
         callback(null, true);
       } else {
-        callback(new Error("CORS Policy: Origin " + origin + " not allowed"));
+        callback(new Error("CORS Policy: Origin not allowed"));
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
