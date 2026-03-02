@@ -57,13 +57,15 @@ app.use("/api/guru", guruRoutes);
 
 // --- 4. EXPORTS & SERVER RUNNING ---
 // PENTING: Vercel membutuhkan module.exports dari aplikasi express
+// --- 4. EXPORTS & SERVER RUNNING ---
 const PORT = process.env.PORT || 5000;
 
+// Ini hanya jalan di laptop (Lokal)
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`🚀 Local Server running on http://localhost:${PORT}`);
   });
 }
 
-// Baris ini WAJIB agar Vercel bisa mengenali Express sebagai Serverless Function
+// WAJIB ADA untuk Vercel
 module.exports = app;
